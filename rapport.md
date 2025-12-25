@@ -127,7 +127,7 @@ AND OCCUPATION.JOUR = '1999-01-22';
 
 #### Question 4
 
-Pour chacune des requêtes précédentes, on donne maintenant le plan d'exécution obtenu avec EXPLAIN, on interprète ce resultat, puis on dessine ce plan sous forme d'arbre.
+Pour chacune des requêtes précédentes, on donne maintenant le plan d'exécution obtenu avec EXPLAIN, on interprète ce résultat, puis on dessine ce plan sous forme d'arbre.
 
 1. Le nom et prénom du client numéro 5
    
@@ -145,7 +145,7 @@ WHERE CLI_ID =5;
 
 On voit que le plan d'exécution utilise un "Seq Scan" (parcours séquentiel) sur la table client, ce qui signifie que chaque ligne de la table est examinée pour trouver celles qui correspondent à la condition CLI_ID = 5. Le coût estimé de cette opération est de 0.00 à 2.25, avec une estimation de 1 ligne retournée.
 
-![alt text](src/Exo1/QuerryShema/image.png)
+![Plan d'exécution de la requête 1](src/Exo1/QuerryShema/image.png)
 
 2. Les jours où le client numéro 5 a occupé une chambre
 
@@ -163,7 +163,7 @@ WHERE CLI_ID = 5;
 
 On voit que le plan d'exécution utilise également un "Seq Scan" sur la table OCCUPATION pour trouver les enregistrements où CLI_ID = 5. Le coût estimé est de 0.00 à 361.27, avec une estimation de 166 lignes retournées.
 
-![alt text](src/Exo1/QuerryShema/image2.png)
+![Plan d'exécution de la requête 2](src/Exo1/QuerryShema/image2.png)
 
 3. Les chambres occupées le 1999-01-22
 
@@ -181,7 +181,7 @@ WHERE JOUR = '1999-01-22';
 
 On voit que le plan d'exécution utilise encore un "Seq Scan" sur la table OCCUPATION pour trouver les enregistrements où JOUR = '1999-01-22'. Le coût estimé est de 0.00 à 361.27, avec une estimation de 11 lignes retournées.
 
-![alt text](src/Exo1/QuerryShema/image3.png)
+![Plan d'exécution de la requête 3](src/Exo1/QuerryShema/image3.png)
 
 4. Le nom et prénom des clients ayant pris une chambre le 1999-01-22
 
@@ -204,7 +204,7 @@ AND OCCUPATION.JOUR = '1999-01-22';
 
 Le plan d'exécution utilise un "Hash Join" pour combiner les tables CLIENT et OCCUPATION en fonction de la condition de jointure. La table OCCUPATION est parcourue séquentiellement pour trouver les enregistrements où JOUR = '1999-01-22', puis une table de hachage est créée à partir de la table CLIENT pour effectuer la jointure. Le coût estimé est de 3.25 à 364.68, avec une estimation de 11 lignes retournées.
 
-![alt text](src/Exo1/QuerryShema/image4.png)
+![Plan d'exécution de la requête 4](src/Exo1/QuerryShema/image4.png)
 
 ### Partie 2
 
@@ -241,7 +241,7 @@ WHERE CLI_ID =5;
 
 On constate que le plan d'exécution reste un "Seq Scan" sur la table client, ce qui indique que l'index n'a pas été utilisé pour cette requête. Cela peut être dû au fait que la table CLIENT est relativement petite, et le système de gestion de base de données a estimé qu'un parcours séquentiel serait plus efficace que l'utilisation de l'index.
 
-![alt text](src/Exo1/QuerryShema/1.2/image.png)
+![Plan d'exécution optimisé de la requête 1](src/Exo1/QuerryShema/1.2/image.png)
 
 2. Les jours où le client numéro 5 a occupé une chambre
 
@@ -261,7 +261,7 @@ WHERE CLI_ID = 5;
 
 On voit que le plan d'exécution utilise maintenant un "Bitmap Heap Scan" sur la table OCCUPATION, ce qui indique que l'index 'idx_occupation_cli_id' a été utilisé pour trouver les enregistrements où CLI_ID = 5. Le coût estimé est de 5.57 à 148.74, avec une estimation de 166 lignes retournées.
 
-![alt text](src/Exo1/QuerryShema/1.2/image2.png)
+![Plan d'exécution optimisé de la requête 2](src/Exo1/QuerryShema/1.2/image2.png)
 
 3. Les chambres occupées le 1999-01-22
 
@@ -279,7 +279,7 @@ WHERE JOUR = '1999-01-22';
 
 On voit que le plan d'exécution utilise un "Index Scan" sur la table OCCUPATION, ce qui indique que l'index 'idx_occupation_jour' a été utilisé pour trouver les enregistrements où JOUR = '1999-01-22'. Le coût estimé est de 0.29 à 25.44, avec une estimation de 11 lignes retournées.
 
-![alt text](src/Exo1/QuerryShema/1.2/image3.png)
+![Plan d'exécution optimisé de la requête 3](src/Exo1/QuerryShema/1.2/image3.png)
 
 4. Le nom et prénom des clients ayant pris une chambre le 1999-01-22
 
@@ -302,7 +302,7 @@ AND OCCUPATION.JOUR = '1999-01-22';
 
 Le plan d'exécution utilise toujours un "Hash Join" pour combiner les tables CLIENT et OCCUPATION, mais cette fois-ci, l'index 'idx_occupation_jour' est utilisé pour accéder aux enregistrements de la table OCCUPATION. Le coût estimé est de 3.54 à 28.72, avec une estimation de 11 lignes retournées.
 
-![alt text](src/Exo1/QuerryShema/1.2/image4.png)
+![Plan d'exécution optimisé de la requête 4](src/Exo1/QuerryShema/1.2/image4.png)
 
 ### Partie 3
 
@@ -480,7 +480,7 @@ concerne ,optimisation.livraisons;
 
 #### Question 6
 
-Finalement, on peut afficher ses statistiques avec la commande suivante :
+Finalement, on peut afficher les statistiques avec la commande suivante :
 
 ```sql
 analyse verbose optimisation.clients , optimisation.commandes , optimisation.produits ,
@@ -703,7 +703,7 @@ ORDER BY nomp;
 --Requête SQL
 SELECT *
 FROM produits
-WHERE nomp = 'nomp_ 327'; -- Je ne sais pas pourquoi tout mes nomp on un espace avant leur numéro
+WHERE nomp = 'nomp_ 327';
 
 --Plan d'exécution
 EXPLAIN (analyse,buffers)
@@ -957,7 +957,7 @@ and datecom='2025-09-01';
 (6 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image.png)
+![Plan d'exécution de la requête 2.3.1](src/Exo2/QuerryShema/image.png)
 
 2. Requête 2
 
@@ -984,7 +984,7 @@ where datecom='2025-09-01';
 (6 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image2.png)
+![Plan d'exécution de la requête 2.3.2](src/Exo2/QuerryShema/image2.png)
 
 3. Requête 3
 
@@ -1011,7 +1011,7 @@ where numC='116';
 (6 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image3.png)
+![Plan d'exécution de la requête 2.3.3](src/Exo2/QuerryShema/image3.png)
 
 On remarque que pour les deux premières requêtes, le plan d'exécution utilise un "Index Scan" sur l'index primaire 'commandes_pkey', ce qui permet un accès rapide aux enregistrements correspondants. Cependant, pour la troisième requête, le plan d'exécution utilise un parcours séquentiel car il n'y a pas d'index sur la colonne 'numC' seule, ce qui entraîne une lecture complète de la table commandes qui est moins efficace.
 De ce fait, si la recherche par 'numC' est fréquente, il serait judicieux de créer un index sur cette colonne pour améliorer les performances des requêtes similaires à la troisième.
@@ -1067,7 +1067,7 @@ where nomc='nomc_ 7';
 (24 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image4.png)
+![Plan d'exécution initial de la requête de jointure](src/Exo2/QuerryShema/image4.png)
 
 Pour optimiser cette requête, on peut créer les deux index suivants :
 
@@ -1122,7 +1122,7 @@ where nomc='nomc_ 7';
 (28 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image4Opti.png)
+![Plan d'exécution optimisé de la requête de jointure](src/Exo2/QuerryShema/image4Opti.png)
 
 On peut maintenant supprimer les index créés précédemment pour ne pas impacter les prochaines questions :
 
@@ -1302,7 +1302,7 @@ Where upper(nomc)='NOMC_ 7';
 (8 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image5.png)
+![Plan d'exécution initial de la requête avec fonction upper](src/Exo2/QuerryShema/image5.png)
 
 Pour optimiser cette requête, on peut créer un index fonctionnel sur la colonne `nomc` en utilisant la fonction `upper`. Cela permettra à PostgreSQL d'utiliser l'index lors de l'exécution de la requête, évitant ainsi un parcours séquentiel complet de la table.
 
@@ -1337,7 +1337,7 @@ Where upper(nomc)='NOMC_ 7';
 (12 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image5Opti.png)
+![Plan d'exécution optimisé de la requête avec index fonctionnel](src/Exo2/QuerryShema/image5Opti.png)
 
 On peut maintenant supprimer l'index créé précédemment pour ne pas impacter les prochaines questions :
 
@@ -1378,7 +1378,7 @@ WHERE EXTRACT(YEAR FROM datecom) = 2017;
 (10 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image6.png)
+![Plan d'exécution initial de la requête avec EXTRACT](src/Exo2/QuerryShema/image6.png)
 
 Ici, la clé primaire n'est pas utilisée car la fonction EXTRACT empêche l'utilisation d'un index sur datecom. Pour optimiser cette requête, on peut reformuler la condition pour utiliser une plage de dates, ce qui permettra à PostgreSQL d'utiliser un index sur datecom si disponible.
 
@@ -1412,7 +1412,7 @@ WHERE datecom >= '2017-01-01' AND datecom < '2018-01-01';
 (11 rows)
 ```
 
-![alt text](src/Exo2/QuerryShema/image6Opti.png)
+![Plan d'exécution optimisé de la requête avec plage de dates](src/Exo2/QuerryShema/image6Opti.png)
 
 On remarque que l'index sur la clé primaire `commandes_pkey` est maintenant utilisé, ce qui améliore considérablement les performances de la requête. Le temps d'exécution est passé de 0.389 ms à 0.265 ms, et le nombre de blocs lus a diminué de 35 à 4.
 
@@ -1465,7 +1465,7 @@ Son expression en algèbre relationnelle (PEL) est la suivante :
 
 #### Question 3
 
-Cette question est la plus interessante car elle nous demande d'analyser le plan d'exécution Oracle suivant :
+Cette question est la plus intéressante car elle nous demande d'analyser le plan d'exécution Oracle suivant :
 
 1. Plan 1 -> il n’existe que deux index, un sur FILM(ID−realisateur), et un sur ARTISTE(ID−
 artiste)
@@ -1520,7 +1520,7 @@ graph TD
 
 
 
-2. Plan 2 -> un index sur FILM(ID −Film), et un sur JOUE(ID −Artiste)
+2. Plan 2 -> un index sur FILM(ID_Film), et un sur JOUE(ID_Artiste)
 
 ```
 0 SELECT STATEMENT
@@ -1566,7 +1566,7 @@ graph TD
     G --> H
 ```
 
-3. Plan 3 -> un index sur FILM(ID −Film), et un sur JOUE(ID −Film)
+3. Plan 3 -> un index sur FILM(ID_Film), et un sur JOUE(ID_Film)
 
 ```
 0 SELECT STATEMENT
@@ -1669,8 +1669,3 @@ La table ARTISTE est choisie comme table pilote (driver) pour le parcours séque
   2. Fusionnant les résultats triés : le flux gauche contient (JOUE + FILM) et le flux droit contient ARTISTE
   3. La fusion se fait en parcourant simultanément les deux flux triés par ID_artiste
 - Le MERGE JOIN est efficace ici car il traite des flux déjà triés et évite les recherches répétées caractéristiques des NESTED LOOPS.
-
-
-
-
-
