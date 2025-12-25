@@ -1,7 +1,120 @@
 -- Partie 1 --
 
+--Les Questions 1 à 5 ne présentent pas de questions mais seulement le peuplement de la base suivant :
+
+drop schema if exists optimisation cascade;
+create schema optimisation;
+set search_path to optimisation ;
+--drop table if exists clients cascade;
+create unlogged table clients(
+NumC integer primary key ,
+NomC varchar (35),
+AdresseC text
+);
+--drop table if exists produits cascade;
+create unlogged table produits(
+NumP integer primary key ,
+NomP varchar (35),
+descriptif text
+);
+--drop table if exists commandes cascade;
+create unlogged table commandes(
+DateCom date ,
+NumC integer ,
+Commentaire text ,
+primary key(DateCom ,NumC)
+);
+--drop table if exists livraisons ;
+create unlogged table livraisons(
+DateLiv date ,
+DateCom date ,
+NumC Integer ,
+Prestataire varchar ,
+primary key(DateLiv ,DateCom ,NumC)
+);
+--drop table if exists Concerne;
+create unlogged table concerne(
+NumP integer ,
+DateCom date ,
+NumC integer ,
+Quantite integer ,
+primary key (NumP ,DateCom ,NumC)
+);
+
+drop procedure if exists rempli_tables;
+create procedure rempli_tables(nbtuples integer)
+as $$
+declare
+k integer;
+un_numP integer;
+compt integer;
+une_date date;
+curs_com cursor for select DateCom , numc
+from optimisation.commandes;
+begin
+INSERT INTO optimisation.clients (numc , nomc , adressec)
+SELECT g, 'nomc_ '||(( random () * nbtuples * 4 / 5):: integer)::varchar , md5(g::text)
+||md5 ((2*g)::text)||md5 ((3*g)::text)
+FROM generate_series (0,nbtuples -1) as g;
+INSERT INTO optimisation.produits (nump , nomp , descriptif)
+SELECT g, 'nomp_ '||(( random () * nbtuples * 4 / 5):: integer)::varchar , md5(g::text)
+||md5 ((2*g)::text)||md5 ((3*g)::text)
+FROM generate_series (0,nbtuples -1) as g;
+for g in 1..4*( nbtuples -1) loop
+une_date = CURRENT_TIMESTAMP - (( random () * 3650):: integer ||'day')::
+interval;
+un_nump =( random ()*(nbtuples -1)):: integer;
+insert into optimisation.commandes (DateCom , numc , commentaire)
+select une_date , un_nump , md5(g::text)||md5 ((2*g)::text)||md5 ((3*
+g)::text) on conflict do nothing;
+end loop;
+for t in curs_com
+loop
+k=( random () *6):: integer;
+for i in 1..k loop
+un_numP = (random ()*(nbtuples -1)):: integer;
+insert into optimisation.concerne (NumP ,datecom ,numc ,
+quantite)
+values (un_nump ,t.Datecom ,t.numc ,( random ()*100):: integer)
+on conflict do nothing;
+if i>3 then
+une_date = t.datecom +(( random () * 30):: integer ||'
+days'):: interval;
+insert into optimisation.livraisons (DateLiv ,
+DateCom , numC , prestataire)
+values(une_date ,t.datecom ,t.numc ,'prest '||(( random
+() *20):: integer):: varchar) on conflict do
+nothing;
+end if;end loop;
+end loop;
+end;
+$$language plpgsql;
+
+do $$
+begin
+call rempli_tables (500);
+end
+$$;
+
+alter table optimisation.commandes add CONSTRAINT fk_commande_client foreign key (numc)
+references optimisation.clients(NumC) on delete cascade not valid;
+alter table optimisation.livraisons add constraint fk_livraison_commande foreign key (
+DateCom ,NumC) references optimisation.commandes(DateCom ,NumC) on delete cascade not
+valid;
+alter table optimisation.concerne add constraint fk_concerne_commande foreign key (DateCom
+,NumC) references optimisation.commandes(DateCom ,NumC) on delete cascade not valid;
+alter table optimisation.concerne add constraint fk_concerne_produit foreign key (NumP)
+references optimisation.produits(NumP) not valid;
+
+analyse optimisation.clients , optimisation.commandes , optimisation.produits , optimisation.
+concerne ,optimisation.livraisons;
+
+analyse verbose optimisation.clients , optimisation.commandes , optimisation.produits ,
+optimisation.concerne ,optimisation.livraisons;
+
 /* Question 6 */
 
+/*
 INFO:  analyzing "optimisation.clients"
 INFO:  "clients": scanned 9 of 9 pages, containing 500 live rows and 0 dead rows; 500 rows in sample, 500 estimated total rows
 INFO:  finished analyzing table "hotels.optimisation.clients"
@@ -38,6 +151,7 @@ buffer usage: 41 hits, 0 reads, 0 dirtied
 WAL usage: 5 records, 0 full page images, 366 bytes, 0 buffers full
 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
 ANALYZE
+*/
 
 -- Partie 2 --
 
@@ -50,16 +164,6 @@ EXPLAIN (analyse,buffers)
 SELECT *
 FROM produits;
 
-                                                 QUERY PLAN                                                 
-------------------------------------------------------------------------------------------------------------
- Seq Scan on produits  (cost=0.00..14.00 rows=500 width=110) (actual time=0.020..0.095 rows=500.00 loops=1)
-   Buffers: shared hit=9
- Planning Time: 0.078 ms
- Execution Time: 0.154 ms
-(4 rows)
-
--- Insert explainations --
-
 /* Question 2 */
 
 SELECT nump, nomp
@@ -69,16 +173,6 @@ EXPLAIN (analyse,buffers)
 SELECT nump, nomp
 FROM produits;
 
-                                                QUERY PLAN                                                 
------------------------------------------------------------------------------------------------------------
- Seq Scan on produits  (cost=0.00..14.00 rows=500 width=13) (actual time=0.020..0.069 rows=500.00 loops=1)
-   Buffers: shared hit=9
- Planning Time: 0.085 ms
- Execution Time: 0.102 ms
-(4 rows)
-
--- Insert explainations --
-
 /* Question 3 */
 
 SELECT DISTINCT nump, nomp
@@ -87,22 +181,6 @@ FROM produits;
 EXPLAIN (analyse,buffers)
 SELECT DISTINCT nump, nomp
 FROM produits;
-
-                                                   QUERY PLAN                                                    
------------------------------------------------------------------------------------------------------------------
- HashAggregate  (cost=16.50..21.50 rows=500 width=13) (actual time=0.328..0.372 rows=500.00 loops=1)
-   Group Key: nump, nomp
-   Batches: 1  Memory Usage: 57kB
-   Buffers: shared hit=9
-   ->  Seq Scan on produits  (cost=0.00..14.00 rows=500 width=13) (actual time=0.014..0.121 rows=500.00 loops=1)
-         Buffers: shared hit=9
- Planning:
-   Buffers: shared hit=15
- Planning Time: 0.172 ms
- Execution Time: 0.432 ms
-(10 rows)
-
--- Insert explainations --
 
 /* Question 4 */
 
@@ -115,22 +193,6 @@ SELECT DISTINCT nump, nomp
 FROM produits
 ORDER BY nomp;
 
-                                                      QUERY PLAN                                                       
------------------------------------------------------------------------------------------------------------------------
- Unique  (cost=36.41..40.16 rows=500 width=13) (actual time=0.975..1.050 rows=500.00 loops=1)
-   Buffers: shared hit=9
-   ->  Sort  (cost=36.41..37.66 rows=500 width=13) (actual time=0.974..0.992 rows=500.00 loops=1)
-         Sort Key: nomp, nump
-         Sort Method: quicksort  Memory: 40kB
-         Buffers: shared hit=9
-         ->  Seq Scan on produits  (cost=0.00..14.00 rows=500 width=13) (actual time=0.027..0.140 rows=500.00 loops=1)
-               Buffers: shared hit=9
- Planning Time: 0.211 ms
- Execution Time: 1.103 ms
-(10 rows)
-
--- Insert explainations --
-
 /* Question 5 */
 
 SELECT *
@@ -141,18 +203,6 @@ EXPLAIN (analyse,buffers)
 SELECT *
 FROM produits
 WHERE nomp = 'nomp_ 327';
-
-                                               QUERY PLAN                                               
---------------------------------------------------------------------------------------------------------
- Seq Scan on produits  (cost=0.00..15.25 rows=1 width=110) (actual time=0.062..0.091 rows=2.00 loops=1)
-   Filter: ((nomp)::text = 'nomp_ 327'::text)
-   Rows Removed by Filter: 498
-   Buffers: shared hit=9
- Planning Time: 0.087 ms
- Execution Time: 0.109 ms
-(6 rows)
-
--- Insert explainations --
 
 /* Question 6 */
 
@@ -165,20 +215,6 @@ SELECT numc, COUNT(*) AS nombre
 FROM commandes
 GROUP BY numc;
 
-                                                    QUERY PLAN                                                     
--------------------------------------------------------------------------------------------------------------------
- HashAggregate  (cost=64.94..69.86 rows=492 width=12) (actual time=0.451..0.497 rows=492.00 loops=1)
-   Group Key: numc
-   Batches: 1  Memory Usage: 73kB
-   Buffers: shared hit=35
-   ->  Seq Scan on commandes  (cost=0.00..54.96 rows=1996 width=4) (actual time=0.021..0.147 rows=1996.00 loops=1)
-         Buffers: shared hit=35
- Planning Time: 0.132 ms
- Execution Time: 0.555 ms
-(8 rows)
-
--- Insert explainations --
-
 /* Question 7 */
 
 SELECT cl.nomc AS "Nom du client", co.datecom as "Date de la commande"
@@ -189,26 +225,6 @@ EXPLAIN (analyse,buffers)
 SELECT cl.nomc AS "Nom du client", co.datecom as "Date de la commande"
 FROM commandes AS co
 JOIN clients AS cl ON co.numc = cl.numc;
-
-                                                       QUERY PLAN                                                        
--------------------------------------------------------------------------------------------------------------------------
- Hash Join  (cost=20.25..80.49 rows=1996 width=13) (actual time=0.269..1.762 rows=1996.00 loops=1)
-   Hash Cond: (co.numc = cl.numc)
-   Buffers: shared hit=44
-   ->  Seq Scan on commandes co  (cost=0.00..54.96 rows=1996 width=8) (actual time=0.012..0.353 rows=1996.00 loops=1)
-         Buffers: shared hit=35
-   ->  Hash  (cost=14.00..14.00 rows=500 width=13) (actual time=0.229..0.231 rows=500.00 loops=1)
-         Buckets: 1024  Batches: 1  Memory Usage: 32kB
-         Buffers: shared hit=9
-         ->  Seq Scan on clients cl  (cost=0.00..14.00 rows=500 width=13) (actual time=0.012..0.108 rows=500.00 loops=1)
-               Buffers: shared hit=9
- Planning:
-   Buffers: shared hit=6
- Planning Time: 0.345 ms
- Execution Time: 2.062 ms
-(14 rows)
-
--- Insert explainations --
 
 /* Question 8 */
 
@@ -221,64 +237,126 @@ and optimisation.commandes.datecom = optimisation.concerne.datecom
 and optimisation.commandes.numc=optimisation.concerne.numc
 and optimisation.produits.nump=optimisation.concerne.nump;
 
-                                                QUERY PLAN                                                 
------------------------------------------------------------------------------------------------------------
- HashAggregate  (cost=98217.11..99026.51 rows=80940 width=18)
-   Group Key: clients.nomc, produits.nomp
-   ->  Merge Join  (cost=541.30..53374.48 rows=8968527 width=18)
-         Merge Cond: ((commandes.datecom = concerne.datecom) AND (commandes.numc = clients.numc))
-         ->  Nested Loop  (cost=0.28..37453.08 rows=2988012 width=8)
-               ->  Index Only Scan using commandes_pkey on commandes  (cost=0.28..74.22 rows=1996 width=8)
-               ->  Materialize  (cost=0.00..32.45 rows=1497 width=0)
-                     ->  Seq Scan on livraisons  (cost=0.00..24.97 rows=1497 width=0)
-         ->  Sort  (cost=541.02..556.00 rows=5991 width=30)
-               Sort Key: concerne.datecom, clients.numc
-               ->  Hash Join  (cost=40.50..165.13 rows=5991 width=30)
-                     Hash Cond: (concerne.nump = produits.nump)
-                     ->  Hash Join  (cost=20.25..129.02 rows=5991 width=25)
-                           Hash Cond: (concerne.numc = clients.numc)
-                           ->  Seq Scan on concerne  (cost=0.00..92.91 rows=5991 width=12)
-                           ->  Hash  (cost=14.00..14.00 rows=500 width=13)
-                                 ->  Seq Scan on clients  (cost=0.00..14.00 rows=500 width=13)
-                     ->  Hash  (cost=14.00..14.00 rows=500 width=13)
-                           ->  Seq Scan on produits  (cost=0.00..14.00 rows=500 width=13)
-(19 rows)
-
 -- Partie 3 --
 
 /* Question 2 */
 
 --Requête1
 
---a
-
 Select *
 from optimisation.commandes
-where numC='354'
-and datecom='2025-09-02';
+where numC='116'
+and datecom='2025-09-01';
 
---b
---Nous n'avons pas encore definit d'index.
-
---c
+EXPLAIN (analyse,buffers)
+Select *
+from optimisation.commandes
+where numC='116'
+and datecom='2025-09-01';
 
 --Requête2
 
---a
+Select *
+from optimisation.commandes
+where datecom='2025-09-01';
 
---b
---Nous n'avons pas encore definit d'index.
-
---c
+EXPLAIN (analyse,buffers)
+Select *
+from optimisation.commandes
+where datecom='2025-09-01';
 
 --Requête3
 
---a
+Select *
+from optimisation.commandes
+where numC='116';
 
---b
---Nous n'avons pas encore definit d'index.
+EXPLAIN (analyse,buffers)
+Select *
+from optimisation.commandes
+where numC='116';
 
---c
+/* Question 3 */
 
+Select nomp
+from optimisation.produits p
+join optimisation.concerne co using(nump)
+join optimisation.clients c using(numc)
+where nomc='nomc_ 7';
 
+EXPLAIN (analyse,buffers)
+Select nomp
+from optimisation.produits p
+join optimisation.concerne co using(nump)
+join optimisation.clients c using(numc)
+where nomc='nomc_ 7';
+
+--Index 
+
+CREATE INDEX idx_clients_nomc ON optimisation.clients(nomc);
+CREATE INDEX idx_concerne_numc ON optimisation.concerne(numc);
+analyse optimisation.clients , optimisation.commandes , optimisation.produits , optimisation.
+concerne ,optimisation.livraisons;
+
+EXPLAIN (analyse,buffers)
+Select nomp
+from optimisation.produits p
+join optimisation.concerne co using(nump)
+join optimisation.clients c using(numc)
+where nomc='nomc_ 7';
+
+--Supression index
+
+DROP INDEX IF EXISTS idx_clients_nomc;
+DROP INDEX IF EXISTS idx_concerne_numc;
+
+/* Question 4 */
+
+EXPLAIN (analyse,buffers)
+Select numc
+from optimisation.clients
+where numc not in
+(select numc from optimisation.livraisons);
+
+EXPLAIN (analyse,buffers)
+Select numc
+from optimisation.clients
+except
+select numc
+from optimisation.livraisons;
+
+EXPLAIN (analyse,buffers)
+Select numc
+from optimisation.clients
+where not exists
+(select numc from optimisation.livraisons
+where optimisation.livraisons.numc=optimisation.clients.numc);
+
+/* Question 5 */
+
+EXPLAIN (analyse,buffers)
+Select upper(nomc), adressec
+From clients
+Where upper(nomc)='NOMC_ 7';
+
+CREATE INDEX idx_clients_upper_nomc ON optimisation.clients(upper(nomc));
+
+analyse optimisation.clients;
+
+EXPLAIN (analyse,buffers)
+Select upper(nomc), adressec
+From clients
+Where upper(nomc)='NOMC_ 7';
+
+/* Question 6 */
+
+EXPLAIN (analyse,buffers)
+SELECT COUNT (*)
+FROM commandes
+WHERE EXTRACT(YEAR FROM datecom) = 2017;
+
+EXPLAIN (analyse,buffers)
+SELECT COUNT (*)
+FROM commandes
+WHERE datecom >= '2017-01-01' AND datecom < '2018-01-01';
 

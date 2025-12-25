@@ -62,27 +62,11 @@ EXPLAIN SELECT CLI_NOM, CLI_PRENOM
 FROM client
 WHERE CLI_ID =5;
 
-                      QUERY PLAN                       
--------------------------------------------------------
- Seq Scan on client  (cost=0.00..2.25 rows=1 width=15)
-   Filter: (cli_id = 5)
-(2 rows)
-
--- Insert tree and explainations  --
-
 --b
 
 EXPLAIN SELECT JOUR
 FROM OCCUPATION
 WHERE CLI_ID = 5;
-
-                          QUERY PLAN                           
----------------------------------------------------------------
- Seq Scan on occupation  (cost=0.00..361.27 rows=166 width=11)
-   Filter: (cli_id = 5)
-(2 rows)
-
--- Insert tree and explainations  --
 
 --c
 
@@ -90,32 +74,12 @@ EXPLAIN SELECT CHB_ID
 FROM OCCUPATION
 WHERE JOUR = '1999-01-22';
 
-                         QUERY PLAN                          
--------------------------------------------------------------
- Seq Scan on occupation  (cost=0.00..361.27 rows=11 width=4)
-   Filter: ((jour)::text = '1999-01-22'::text)
-(2 rows)
-
--- Insert tree and explainations  --
-
 --d
 
 EXPLAIN SELECT CLI_NOM, CLI_PRENOM
 FROM CLIENT, OCCUPATION
 WHERE CLIENT.CLI_ID = OCCUPATION.CLI_ID
 AND OCCUPATION.JOUR = '1999-01-22';
-
-                             QUERY PLAN                              
----------------------------------------------------------------------
- Hash Join  (cost=3.25..364.68 rows=11 width=15)
-   Hash Cond: (occupation.cli_id = client.cli_id)
-   ->  Seq Scan on occupation  (cost=0.00..361.27 rows=11 width=4)
-         Filter: ((jour)::text = '1999-01-22'::text)
-   ->  Hash  (cost=2.00..2.00 rows=100 width=19)
-         ->  Seq Scan on client  (cost=0.00..2.00 rows=100 width=19)
-(6 rows)
-
--- Insert tree and explainations  --
 
 -- PARTIE 2 --
 
@@ -138,29 +102,11 @@ EXPLAIN SELECT CLI_NOM, CLI_PRENOM
 FROM client
 WHERE CLI_ID =5;
 
-                      QUERY PLAN                       
--------------------------------------------------------
- Seq Scan on client  (cost=0.00..2.25 rows=1 width=15)
-   Filter: (cli_id = 5)
-(2 rows)
-
--- Insert tree and explainations  --
-
 --b
 
 EXPLAIN SELECT JOUR
 FROM OCCUPATION
 WHERE CLI_ID = 5;
-
-                                      QUERY PLAN                                      
---------------------------------------------------------------------------------------
- Bitmap Heap Scan on occupation  (cost=5.57..148.74 rows=166 width=11)
-   Recheck Cond: (cli_id = 5)
-   ->  Bitmap Index Scan on idx_occupation_cli_id  (cost=0.00..5.53 rows=166 width=0)
-         Index Cond: (cli_id = 5)
-(4 rows)
-
--- Insert tree and explainations  --
 
 --c
 
@@ -168,32 +114,12 @@ EXPLAIN SELECT CHB_ID
 FROM OCCUPATION
 WHERE JOUR = '1999-01-22';
 
-                                       QUERY PLAN                                       
-----------------------------------------------------------------------------------------
- Index Scan using idx_occupation_jour on occupation  (cost=0.29..25.44 rows=11 width=4)
-   Index Cond: ((jour)::text = '1999-01-22'::text)
-(2 rows)
-
--- Insert tree and explainations  --
-
 --d
 
 EXPLAIN SELECT CLI_NOM, CLI_PRENOM
 FROM CLIENT, OCCUPATION
 WHERE CLIENT.CLI_ID = OCCUPATION.CLI_ID
 AND OCCUPATION.JOUR = '1999-01-22';
-
-                                          QUERY PLAN                                          
-----------------------------------------------------------------------------------------------
- Hash Join  (cost=3.54..28.72 rows=11 width=15)
-   Hash Cond: (occupation.cli_id = client.cli_id)
-   ->  Index Scan using idx_occupation_jour on occupation  (cost=0.29..25.44 rows=11 width=4)
-         Index Cond: ((jour)::text = '1999-01-22'::text)
-   ->  Hash  (cost=2.00..2.00 rows=100 width=19)
-         ->  Seq Scan on client  (cost=0.00..2.00 rows=100 width=19)
-(6 rows)
-
--- Insert tree and explainations  --
 
 -- Partie 3 --
 
@@ -216,5 +142,3 @@ buffer usage: 170 hits, 0 reads, 0 dirtied
 WAL usage: 7 records, 0 full page images, 500 bytes, 0 buffers full
 system usage: CPU: user: 0.02 s, system: 0.00 s, elapsed: 0.02 s
 ANALYZE
-
--- Insert explainations --
