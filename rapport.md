@@ -1,4 +1,4 @@
-# Projet BDD - Optimisation des Requêtes SQL
+# Bases de Données: Introduction à l’optimisation. Mini-Projet: optimisation
 
 Julien TAP   
 ET4 - IIM - Groupe1
@@ -7,9 +7,52 @@ ET4 - IIM - Groupe1
 
 ## Table des Matières
 
----
-
-## Introduction
+- [Bases de Données: Introduction à l’optimisation. Mini-Projet: optimisation](#bases-de-données-introduction-à-loptimisation-mini-projet-optimisation)
+  - [Table des Matières](#table-des-matières)
+  - [Exercice 1](#exercice-1)
+    - [Partie 1](#partie-1)
+      - [Question 1](#question-1)
+      - [Question 2](#question-2)
+      - [Question 3](#question-3)
+      - [Question 4](#question-4)
+    - [Partie 2](#partie-2)
+      - [Question 1](#question-1-1)
+      - [Question 2](#question-2-1)
+    - [Partie 3](#partie-3)
+      - [Question 1](#question-1-2)
+  - [Exercice 2](#exercice-2)
+    - [Partie 1](#partie-1-1)
+      - [Question 1](#question-1-3)
+      - [Question 2](#question-2-2)
+      - [Question 3](#question-3-1)
+      - [Question 4](#question-4-1)
+      - [Question 5](#question-5)
+      - [Question 6](#question-6)
+    - [Partie 2](#partie-2-1)
+      - [Question 1](#question-1-4)
+      - [Question 2](#question-2-3)
+      - [Question 3](#question-3-2)
+      - [Question 4](#question-4-2)
+      - [Question 5](#question-5-1)
+      - [Question 6](#question-6-1)
+      - [Question 7](#question-7)
+      - [Question 8](#question-8)
+    - [Partie 3](#partie-3-1)
+      - [Question 1](#question-1-5)
+      - [Question 2](#question-2-4)
+      - [Question 3](#question-3-3)
+      - [Question 4](#question-4-3)
+      - [Question 5](#question-5-2)
+      - [Question 6](#question-6-2)
+  - [Exercice 3](#exercice-3)
+    - [Partie 1](#partie-1-2)
+      - [Question 1](#question-1-6)
+      - [Question 2](#question-2-5)
+      - [Question 3](#question-3-4)
+      - [Analyse détaillée des plans d'exécution](#analyse-détaillée-des-plans-dexécution)
+        - [Plan 1 (a) - Index sur FILM(ID\_realisateur) et ARTISTE(ID\_artiste)](#plan-1-a---index-sur-filmid_realisateur-et-artisteid_artiste)
+        - [Plan 2 (b) - Index sur FILM(ID\_Film) et JOUE(ID\_Artiste)](#plan-2-b---index-sur-filmid_film-et-joueid_artiste)
+        - [Plan 3 (c) - Index sur FILM(ID\_Film) et JOUE(ID\_Film)](#plan-3-c---index-sur-filmid_film-et-joueid_film)
 
 ---
 
@@ -1439,6 +1482,44 @@ artiste)
 8 TABLE ACCESS FULL Film
 ```
 
+Nous pouvons représenter ce plan d'exécution sous forme d'arbre :
+
+```mermaid
+graph TD
+    subgraph Final_Step
+    A[0: SELECT STATEMENT]
+    end
+
+    subgraph Operation_Principale
+    B[1: MERGE JOIN]
+    end
+
+    subgraph Branche_Gauche_Artiste_Joue
+    C[2: SORT JOIN]
+    D[3: NESTED LOOPS]
+    E[4: TABLE ACCESS FULL - JOUE]
+    F[5: TABLE ACCESS BY ROWID - ARTISTE]
+    G[6: INDEX UNIQUE SCAN - ARTISTE_IDX]
+    end
+
+    subgraph Branche_Droite_Film
+    H[7: SORT JOIN]
+    I[8: TABLE ACCESS FULL - FILM]
+    end
+
+    A --> B
+    B -- 1er flux trié --> C
+    B -- 2ème flux trié --> H
+    C --> D
+    H --> I
+    
+    D -- Table pilote --> E
+    D -- Recherche correspondance --> F
+    F --> G
+```
+
+
+
 2. Plan 2 -> un index sur FILM(ID −Film), et un sur JOUE(ID −Artiste)
 
 ```
@@ -1450,6 +1531,39 @@ artiste)
 5 INDEX RANGE SCAN JOUE_ARTISTE
 6 TABLE ACCESS BY ROWID FILM
 7 INDEX UNIQUE SCAN FILM_IDX
+```
+
+```mermaid
+graph TD
+    subgraph Final
+    A[0: SELECT STATEMENT]
+    end
+
+    subgraph Boucle_Principale
+    B[1: NESTED LOOPS]
+    end
+
+    subgraph Boucle_Interne_Artiste_Joue
+    C[2: NESTED LOOPS]
+    D[3: TABLE ACCESS FULL - ARTISTE]
+    E[4: TABLE ACCESS BY ROWID - JOUE]
+    F[5: INDEX RANGE SCAN - JOUE_ARTISTE]
+    end
+
+    subgraph Acces_Film
+    G[6: TABLE ACCESS BY ROWID - FILM]
+    H[7: INDEX UNIQUE SCAN - FILM_IDX]
+    end
+
+    A --> B
+    B -- Reçoit (Artiste+Joue) --> C
+    B -- Cherche le Film correspondant --> G
+    
+    C -- Table Pilote (Driver) --> D
+    C -- Cherche Rôles --> E
+    E --> F
+    
+    G --> H
 ```
 
 3. Plan 3 -> un index sur FILM(ID −Film), et un sur JOUE(ID −Film)
@@ -1465,6 +1579,96 @@ artiste)
 7 SORT JOIN
 8 TABLE ACCESS FULL ARTISTE
 ```
+
+```mermaid
+graph TD
+    subgraph Final
+    A[0: SELECT STATEMENT]
+    end
+
+    subgraph Jointure_Finale
+    B[1: MERGE JOIN]
+    end
+
+    subgraph Branche_Gauche_Films_Joués
+    C[2: SORT JOIN]
+    D[3: NESTED LOOPS]
+    E[4: TABLE ACCESS FULL - JOUE]
+    F[5: TABLE ACCESS BY ROWID - FILM]
+    G[6: INDEX UNIQUE SCAN - FILM_IDX]
+    end
+
+    subgraph Branche_Droite_Artistes
+    H[7: SORT JOIN]
+    I[8: TABLE ACCESS FULL - ARTISTE]
+    end
+
+    A --> B
+    B -- Flux trié 1 (Joue+Film) --> C
+    B -- Flux trié 2 (Artistes) --> H
+    
+    C --> D
+    D -- Table Pilote --> E
+    D -- Recherche Film --> F
+    F --> G
+    
+    H --> I
+```
+
+#### Analyse détaillée des plans d'exécution
+
+##### Plan 1 (a) - Index sur FILM(ID_realisateur) et ARTISTE(ID_artiste)
+
+**Parcours séquentiel :**
+- Le parcours séquentiel (TABLE ACCESS FULL) est effectué sur les tables **JOUE** (ligne 4) et **FILM** (ligne 8).
+
+**Index utilisés pour la jointure :**
+- L'index **ARTISTE_IDX** (sur ID_artiste) est utilisé pour la jointure entre JOUE et ARTISTE.
+
+**Table alternative pour le parcours séquentiel :**
+- On aurait pu faire le parcours séquentiel sur la table **ARTISTE** plutôt que sur JOUE, puisque les deux tables doivent de toute façon être parcourues. Le choix de JOUE comme table pilote est probablement dû à sa taille ou à ses statistiques.
+
+**L'index sur ID_realisateur est-il utilisable ?**
+- Non, l'index sur FILM(ID_realisateur) **n'est pas utilisable** pour cette jointure car :
+  - La jointure entre JOUE et FILM se fait sur **JOUE.ID_film = FILM.ID_film**
+  - L'index existant porte sur **FILM.ID_realisateur**, qui n'intervient pas dans cette condition de jointure
+  - Pour que l'index soit utilisable, il faudrait un index sur FILM(ID_film), pas sur FILM(ID_realisateur)
+
+##### Plan 2 (b) - Index sur FILM(ID_Film) et JOUE(ID_Artiste)
+
+**Pourquoi ARTISTE est choisi pour le parcours séquentiel initial ?**
+
+La table ARTISTE est choisie comme table pilote (driver) pour le parcours séquentiel initial (ligne 3: TABLE ACCESS FULL ARTISTE) pour plusieurs raisons :
+
+1. **Cardinalité favorable** : ARTISTE contient probablement moins de tuples que les autres tables, ce qui minimise le nombre d'itérations dans les boucles imbriquées.
+
+2. **Optimisation des index disponibles** : 
+   - L'index JOUE_ARTISTE (sur ID_Artiste) permet d'accéder efficacement aux rôles de chaque artiste
+   - L'index FILM_IDX (sur ID_Film) permet ensuite d'accéder directement aux films correspondants
+
+3. **Stratégie de jointure** : En commençant par ARTISTE, on peut exploiter les deux index disponibles (JOUE_ARTISTE et FILM_IDX) pour les jointures successives, ce qui est plus efficace que de commencer par une table qui nécessiterait plus de parcours séquentiels.
+
+4. **Algorithme NESTED LOOPS** : Cette stratégie fonctionne bien quand la table externe (driver) est petite et que les tables internes peuvent être accédées efficacement via des index, ce qui est le cas ici.
+
+##### Plan 3 (c) - Index sur FILM(ID_Film) et JOUE(ID_Film)
+
+**Index utilisés pour la jointure :**
+- L'index **FILM_IDX** (sur ID_film) a servi à la jointure entre les tables **JOUE** et **FILM** (ligne 6: INDEX UNIQUE SCAN FILM_IDX).
+
+**Pourrait-on inverser l'ordre dans cette jointure ?**
+- Non, on ne peut pas facilement inverser l'ordre de cette jointure car :
+  - JOUE est la table pilote (ligne 4: TABLE ACCESS FULL JOUE)
+  - Pour chaque ligne de JOUE, on recherche le FILM correspondant via l'index FILM_IDX
+  - Si on inversait (FILM comme pilote), il faudrait un index sur JOUE(ID_Film) pour accéder efficacement aux rôles, ce qui n'est pas explicitement mentionné comme index disponible dans ce plan
+  - L'inversion serait possible mais moins performante sans l'index approprié
+
+**Algorithme utilisé pour la seconde jointure :**
+- L'algorithme utilisé pour la seconde jointure est le **MERGE JOIN** (ligne 1).
+- Cet algorithme fonctionne en :
+  1. Triant les deux flux de données (SORT JOIN aux lignes 2 et 7)
+  2. Fusionnant les résultats triés : le flux gauche contient (JOUE + FILM) et le flux droit contient ARTISTE
+  3. La fusion se fait en parcourant simultanément les deux flux triés par ID_artiste
+- Le MERGE JOIN est efficace ici car il traite des flux déjà triés et évite les recherches répétées caractéristiques des NESTED LOOPS.
 
 
 
